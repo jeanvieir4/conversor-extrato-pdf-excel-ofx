@@ -186,7 +186,96 @@ def parse_unicred(texto):
 # ---------------------------------------------------------------------------
 # CRESOL
 # ---------------------------------------------------------------------------
+def _parse_cresol_colmeia(texto):
+    """Segundo layout de extrato do Cresol, gerado pelo sistema web 'Colmeia'
+    (impressao de pagina, nao o extrato tradicional). Formato bem diferente
+    do parse_cresol original:
+      '03/08/2026 SALDO ANT.:               15.384,73 C'   <- cabecalho do dia
+      'PIX CREDITO                                     '    <- categoria
+      '(DE: THIAGO CHAGAS - 01/08)              78,00 C'    <- detalhe + valor
+    Descricao longa quebra em 3 linhas, com o valor sozinho na 3a:
+      'PAGAMENTO DE TITULOS'
+      '(BEVILAQUA CONSTRUTORA E MATERIAL)'
+      '                                      1.400,00 D'
+    Validado batendo saldo inicial + soma dos lancamentos == saldo final
+    declarado no proprio extrato (ver CONTEXTO_PROJETO.md).
+    """
+    # O rodape de cada pagina (URL do sistema + cabecalho repetido) e a marca
+    # d'agua diagonal com o nome de quem tirou o extrato (repetida varias
+    # vezes, rotacionada) viram fragmentos curtos quando o pdfplumber padrao
+    # nao da conta do layout e caimos no fallback por posicao de caractere
+    # (ver _texto_robusto_por_caracteres em converter.py). Sem filtrar isso,
+    # uma transacao que cai bem na quebra de pagina herda esse lixo na
+    # descricao. Fragmento generico (nao depende do nome de quem gerou o
+    # extrato): linha de 4 caracteres uteis ou menos, ou que contenha a URL.
+    linhas = [l for l in _linhas_uteis(texto)
+              if 'sistema.confesol' not in l.lower()
+              and 'sistema de gest' not in l.lower()
+              and len(l.strip()) > 4]
+    for i, l in enumerate(linhas):
+        if 'LANCAMENTOS FUTUROS' in l.upper() or l.strip().startswith('(=)SALDO'):
+            linhas = linhas[:i]
+            break
+
+    padrao_dia = re.compile(r'^(\d{2})/(\d{2})/(\d{4})\s+SALDO ANT\.:')
+    padrao_valor_fim = re.compile(r'([\d.]+,\d{2})\s*([CD])\s*$')
+
+    data_atual = None
+    categoria = None
+    out = []
+    i = 0
+    while i < len(linhas):
+        l = linhas[i].strip()
+        m_dia = padrao_dia.match(l)
+        if m_dia:
+            dd, mm, yyyy = m_dia.groups()
+            try:
+                data_atual = date(int(yyyy), int(mm), int(dd))
+            except ValueError:
+                data_atual = None
+            categoria = None
+            i += 1
+            continue
+        if not l:
+            i += 1
+            continue
+        if l.startswith('('):
+            m_valor = padrao_valor_fim.search(l)
+            if m_valor:
+                valor_str, tipo = m_valor.groups()
+                desc_extra = l[:m_valor.start()].strip()
+                historico = categoria if not desc_extra else f'{categoria} {desc_extra}'.strip()
+                out.append({'data': data_atual, 'historico': historico or '(sem descricao)',
+                             'valor': _dec(valor_str), 'tipo': tipo, 'obs': ''})
+                i += 1
+                continue
+            # descricao longa: o valor vem sozinho na proxima linha
+            if i + 1 < len(linhas):
+                m_valor2 = padrao_valor_fim.search(linhas[i + 1].strip())
+                if m_valor2:
+                    valor_str, tipo = m_valor2.groups()
+                    historico = f'{categoria} {l}'.strip() if categoria else l
+                    out.append({'data': data_atual, 'historico': historico,
+                                 'valor': _dec(valor_str), 'tipo': tipo, 'obs': ''})
+                    i += 2
+                    continue
+            i += 1
+            continue
+        # linha de categoria (PIX CREDITO, PAGAMENTO DE TITULOS etc) - nao e
+        # transacao, so contexto pra descricao da proxima linha "(...)". Toda
+        # categoria real vem em CAIXA ALTA; usa isso pra nao deixar um resto
+        # de marca d'agua (texto normal, tipo "Extrato emitido por...") que
+        # escapou do filtro acima sobrescrever a categoria certa quando uma
+        # transacao cai bem na quebra de pagina.
+        if l.isupper():
+            categoria = l
+        i += 1
+    return out, None
+
+
 def parse_cresol(texto):
+    if 'EXTRATO CONSOLIDADO DE CONTA CORRENTE' in texto.upper() or 'sistema.confesol' in texto.lower():
+        return _parse_cresol_colmeia(texto)
     linhas = _linhas_uteis(texto)
     # O layout real quebra descricoes longas em 2 linhas, com a linha de
     # data+valor ficando ENTRE elas (por causa do alinhamento visual no PDF):

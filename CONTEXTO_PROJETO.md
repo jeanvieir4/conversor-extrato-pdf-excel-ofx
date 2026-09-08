@@ -94,8 +94,42 @@ pagina.
   pra CDB e nao contam como movimento de conta corrente conforme o proprio
   extrato)
 - UniCred
-- Cresol (descricao as vezes quebra em 2 linhas com a linha de data+valor
-  no meio)
+- Cresol - dois formatos completamente diferentes, `parse_cresol` detecta
+  qual e e roteia pro parser certo:
+  1. Extrato tradicional (descricao as vezes quebra em 2 linhas com a linha
+     de data+valor no meio).
+  2. Extrato do sistema web "Colmeia" (`_parse_cresol_colmeia`), identificado
+     por `EXTRATO CONSOLIDADO DE CONTA CORRENTE` ou pela URL
+     `sistema.confesol/colmeia` no texto. Esse formato tem um problema
+     serio de extracao: o `page.extract_text()` padrao do pdfplumber
+     EMBARALHA a pagina inteira (parece ser peculiaridade de como esse
+     sistema gera o PDF por "impressao" de pagina web). A solucao foi um
+     fallback em `converter.py` (`_texto_robusto_por_caracteres`) que
+     reconstroi as linhas agrupando os caracteres pela posicao vertical
+     (`char['top']`) na ordem em que aparecem no fluxo do PDF, em vez de
+     confiar no algoritmo de layout do pdfplumber - os caracteres em si
+     estao em ordem de leitura correta no PDF, so o agrupamento em linhas
+     que falha. O fallback so ativa quando detecta a URL
+     `sistema.confesol/colmeia` no texto (ver `_FINGERPRINTS_TEXTO_EMBARALHADO`).
+     Cada pagina tem tambem uma marca d'agua diagonal (nome de quem gerou o
+     extrato, repetida varias vezes) que vira uma sopa de fragmentos curtos
+     nesse agrupamento - `_parse_cresol_colmeia` filtra isso (linhas curtas
+     demais, linhas com a URL do sistema, e usa o fato de que toda
+     categoria real de transacao vem em CAIXA ALTA pra nao deixar um resto
+     de marca d'agua sobrescrever a categoria certa quando uma transacao
+     cai bem na quebra de pagina). Ver `EXTRATO CONSOLIDADO...pdf` usado
+     pra validar - saldo inicial + soma dos lancamentos bateu exatamente
+     com o saldo final declarado no extrato (13.474,42).
+  IMPORTANTE: por causa desse formato novo, o detector do Bradesco em
+  `DETECTORES` (`converter.py`) tinha um fallback frouxo (`'bradesco' in
+  texto.lower()`) que dava falso positivo quando o extrato de OUTRO banco
+  tinha um boleto pago pra "Bradesco Seguros" (nome de terceiro, nao do
+  banco). Corrigido colocando `cresol` antes de `bradesco` na lista
+  `DETECTORES` (ordem importa - `identificar_banco` para no primeiro
+  detector que bate). Se aparecer um bug parecido com outro banco no
+  futuro, suspeitar do mesmo padrao: fallback frouxo tipo `'nome_banco' in
+  texto.lower()` pegando mencao a esse banco como texto livre dentro da
+  descricao de uma transacao de outro banco.
 - Ailos / ViaCredi (mesmo sistema, cooperativa aparece no cabecalho)
 - Banco do Brasil (excluir linhas "BB Rende Facil", mesma logica do Itau)
 - Bradesco (cuidado: o layout dos primeiros lancamentos de credito difere

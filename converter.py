@@ -22,11 +22,15 @@ from ofx_export import gerar_ofx
 DETECTORES = [
     ('sicoob',    lambda t: 'SICOOB' in t and 'SISTEMA DE COOPERATIVAS' in t),
     ('caixa',     lambda t: ('GERENCIADOR' in t.upper() and 'CAIXA' in t.upper()) or 'Extrato no per\u00edodo de' in t),
+    # cresol vem antes do bradesco: o fallback frouxo do bradesco ('bradesco' in
+    # texto) da falso positivo quando um extrato de OUTRO banco tem um boleto
+    # pago pra "Bradesco Seguros" ou similar (nome de terceiro, nao do banco).
+    ('cresol',    lambda t: 'Consulta Posi\u00e7\u00e3o consolidada' in t or 'CRESOL' in t.upper()
+                              or 'sistema.confesol' in t.lower()),
     ('bradesco',  lambda t: ('Lan\u00e7amento' in t and 'Dcto.' in t and 'D\u00e9bito' in t)
                               or 'Nome do usu\u00e1rio:' in t or ('bradesco' in t.lower())),
     ('itau',      lambda t: 'extrato mensal' in t.lower() and ('ita\u00fa' in t.lower() or 'B001A' in t)),
     ('unicred',   lambda t: 'CENTRAL DE RELACIONAMENTO' in t or ('Coop:' in t and 'AG:' in t and 'Conta:' in t)),
-    ('cresol',    lambda t: 'Consulta Posi\u00e7\u00e3o consolidada' in t or 'CRESOL' in t.upper()),
     ('ailos',     lambda t: 'AILOS' in t.upper() or 'VIACREDIALTOVALE' in t.upper() or 'VIACREDI' in t.upper()),
     ('bb',        lambda t: 'BB Rende F' in t or ('Ag. origem' in t and 'Lote' in t) or 'Dt. balancete' in t),
     ('santander', lambda t: 'santander' in t.lower() or 'Extrato_PJ_A4' in t or 'BALP_UY' in t),
@@ -44,6 +48,37 @@ def identificar_banco(texto):
     return None
 
 
+def _texto_robusto_por_caracteres(page):
+    """Fallback de extracao: reconstroi as linhas agrupando os caracteres
+    pela posicao vertical, na ordem em que aparecem no fluxo do PDF (em vez
+    de deixar o algoritmo de layout do pdfplumber decidir a ordem). Usado
+    quando o extract_text() padrao embaralha a pagina - visto em extratos
+    gerados por "impressao" de sistema web (ex: Cresol / sistema Colmeia),
+    onde os caracteres tem posicoes que confundem o agrupador padrao."""
+    linhas = []
+    atual = []
+    top_atual = None
+    for c in page.chars:
+        t = round(c['top'], 1)
+        if top_atual is None or abs(t - top_atual) < 1.5:
+            atual.append(c['text'])
+            if top_atual is None:
+                top_atual = t
+        else:
+            linhas.append(''.join(atual))
+            atual = [c['text']]
+            top_atual = t
+    if atual:
+        linhas.append(''.join(atual))
+    return '\n'.join(linhas)
+
+
+# Fingerprint de paginas com texto embaralhado pelo extract_text() padrao.
+# A URL do sistema sobrevive ao embaralhamento (fica intacta), por isso da
+# pra usar ela pra decidir quando trocar pelo fallback por caracteres.
+_FINGERPRINTS_TEXTO_EMBARALHADO = ('sistema.confesol/colmeia',)
+
+
 def extrair_blocos_por_banco(caminho_pdf):
     """Agrupa paginas consecutivas do mesmo banco. Paginas sem cabecalho
     reconhecivel herdam o banco da pagina anterior (paginas de continuacao)."""
@@ -53,6 +88,8 @@ def extrair_blocos_por_banco(caminho_pdf):
     with pdfplumber.open(caminho_pdf) as pdf:
         for page in pdf.pages:
             texto = page.extract_text() or ''
+            if any(fp in texto.lower() for fp in _FINGERPRINTS_TEXTO_EMBARALHADO):
+                texto = _texto_robusto_por_caracteres(page)
             banco_pagina = identificar_banco(texto)
             if banco_pagina and banco_pagina != banco_atual and texto_atual:
                 blocos.append((banco_atual, '\n'.join(texto_atual)))
