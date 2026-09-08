@@ -11,11 +11,13 @@ numa planilha.
 
 ## Baixar (Windows, pronto pra usar)
 
-Nao precisa instalar Python nem nada. Baixe o executavel:
+Nao precisa instalar Python nem nada. Baixe o zip (contem o `.exe`, o
+`LEIA-ME.txt` com instrucoes e a `LICENSE.txt`) e extraia:
 
-**[Conversor_Extratos.exe (GitHub Releases)](https://github.com/jeanvieir4/conversor-extrato-pdf-excel-ofx/releases/download/1.0/Conversor_Extratos.exe)**
+**[Conversor_Extratos.zip (GitHub Releases)](https://github.com/jeanvieir4/conversor-extrato-pdf-excel-ofx/releases/download/1.0/Conversor_Extratos.zip)**
 
-Instrucoes completas de uso em [`Para_Equipe/LEIA-ME.txt`](Para_Equipe/LEIA-ME.txt).
+O LEIA-ME.txt tambem esta neste repositorio em
+[`Para_Equipe/LEIA-ME.txt`](Para_Equipe/LEIA-ME.txt).
 
 Na primeira execucao o Windows SmartScreen avisa "Editor desconhecido" -
 isso e normal pra um executavel sem certificado de assinatura paga, nao e
