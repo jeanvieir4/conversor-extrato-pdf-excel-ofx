@@ -6,8 +6,9 @@
 *.ofx
 ~$*
 
-# Executavel compilado (51MB+, distribuido via OneDrive/GitHub Releases, nao pelo git)
+# Executavel compilado e pacote de distribuicao (50MB+, vai pro GitHub Releases, nao pro git)
 *.exe
+*.zip
 
 # Python
 __pycache__/
