@@ -1,0 +1,217 @@
+# -*- coding: utf-8 -*-
+"""
+Conversor de extrato bancario em PDF para Excel - Jean Vieira
+Uso: python converter.py caminho_do_extrato.pdf [outro.pdf ...]
+Gera um .xlsx por PDF de entrada, na mesma pasta, com 4 colunas:
+Data (dd/mm/aaaa), Historico, Valor (positivo, virgula decimal), Tipo (C/D).
+"""
+import sys
+import os
+import glob
+import pdfplumber
+from openpyxl import Workbook
+from openpyxl.styles import Font, PatternFill
+
+sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+from bancos import BANK_PARSERS
+from ofx_export import gerar_ofx
+
+# Observacao: nem todo banco escreve o proprio nome como texto selecionavel no PDF
+# (varios usam o nome so na logo, que e imagem). Por isso alguns detectores usam
+# combinacoes de campos do cabecalho/rodape em vez do nome do banco.
+DETECTORES = [
+    ('sicoob',    lambda t: 'SICOOB' in t and 'SISTEMA DE COOPERATIVAS' in t),
+    ('caixa',     lambda t: ('GERENCIADOR' in t.upper() and 'CAIXA' in t.upper()) or 'Extrato no per\u00edodo de' in t),
+    ('bradesco',  lambda t: ('Lan\u00e7amento' in t and 'Dcto.' in t and 'D\u00e9bito' in t)
+                              or 'Nome do usu\u00e1rio:' in t or ('bradesco' in t.lower())),
+    ('itau',      lambda t: 'extrato mensal' in t.lower() and ('ita\u00fa' in t.lower() or 'B001A' in t)),
+    ('unicred',   lambda t: 'CENTRAL DE RELACIONAMENTO' in t or ('Coop:' in t and 'AG:' in t and 'Conta:' in t)),
+    ('cresol',    lambda t: 'Consulta Posi\u00e7\u00e3o consolidada' in t or 'CRESOL' in t.upper()),
+    ('ailos',     lambda t: 'AILOS' in t.upper() or 'VIACREDIALTOVALE' in t.upper() or 'VIACREDI' in t.upper()),
+    ('bb',        lambda t: 'BB Rende F' in t or ('Ag. origem' in t and 'Lote' in t) or 'Dt. balancete' in t),
+    ('santander', lambda t: 'santander' in t.lower() or 'Extrato_PJ_A4' in t or 'BALP_UY' in t),
+    ('sicredi',   lambda t: 'Sicredi' in t or 'Associado:' in t),
+]
+
+
+def identificar_banco(texto):
+    for nome, teste in DETECTORES:
+        try:
+            if teste(texto):
+                return nome
+        except Exception:
+            continue
+    return None
+
+
+def extrair_blocos_por_banco(caminho_pdf):
+    """Agrupa paginas consecutivas do mesmo banco. Paginas sem cabecalho
+    reconhecivel herdam o banco da pagina anterior (paginas de continuacao)."""
+    blocos = []  # lista de (nome_banco, texto_concatenado)
+    banco_atual = None
+    texto_atual = []
+    with pdfplumber.open(caminho_pdf) as pdf:
+        for page in pdf.pages:
+            texto = page.extract_text() or ''
+            banco_pagina = identificar_banco(texto)
+            if banco_pagina and banco_pagina != banco_atual and texto_atual:
+                blocos.append((banco_atual, '\n'.join(texto_atual)))
+                texto_atual = []
+            if banco_pagina:
+                banco_atual = banco_pagina
+            texto_atual.append(texto)
+        if texto_atual:
+            blocos.append((banco_atual, '\n'.join(texto_atual)))
+    return blocos
+
+
+def _formatar_valor_brl(valor):
+    """Decimal(1234.56) -> '1.234,56' (padrao numerico brasileiro, com milhar)."""
+    inteiro, _, centavos = f"{valor:.2f}".partition('.')
+    negativo = inteiro.startswith('-')
+    if negativo:
+        inteiro = inteiro[1:]
+    grupos = []
+    while len(inteiro) > 3:
+        grupos.insert(0, inteiro[-3:])
+        inteiro = inteiro[:-3]
+    grupos.insert(0, inteiro)
+    return ('-' if negativo else '') + '.'.join(grupos) + ',' + centavos
+
+
+NOMES_BANCO = {
+    'sicoob': 'Sicoob', 'caixa': 'Caixa', 'itau': 'Itau', 'unicred': 'UniCred',
+    'cresol': 'Cresol', 'ailos': 'Ailos_ViaCredi', 'bb': 'BancoDoBrasil',
+    'santander': 'Santander', 'sicredi': 'Sicredi', 'bradesco': 'Bradesco',
+}
+
+
+def gerar_excel(transacoes_por_banco, avisos, caminho_saida):
+    wb = Workbook()
+    wb.remove(wb.active)  # a aba ativa padrao e substituida por uma aba por banco
+
+    for banco, transacoes in transacoes_por_banco.items():
+        if not transacoes:
+            continue
+        titulo_aba = NOMES_BANCO.get(banco, banco)[:31]  # limite do Excel p/ nome de aba
+        ws = wb.create_sheet(titulo_aba)
+        ws.append(['Data', 'Historico', 'Valor', 'Tipo', 'Observacao'])
+        for c in ws[1]:
+            c.font = Font(bold=True, color='FFFFFF')
+            c.fill = PatternFill(start_color='1B4E8C', end_color='1B4E8C', fill_type='solid')
+
+        transacoes_ordenadas = sorted(transacoes, key=lambda t: (t['data'] is None, t['data']))
+        for t in transacoes_ordenadas:
+            valor_str = _formatar_valor_brl(t['valor']) if t['valor'] is not None else '[A VERIFICAR]'
+            ws.append([
+                t['data'].strftime('%d/%m/%Y') if t['data'] else '[A VERIFICAR]',
+                t['historico'],
+                valor_str,
+                t['tipo'],
+                t.get('obs', ''),
+            ])
+
+        larguras = [12, 55, 14, 8, 60]
+        for i, w in enumerate(larguras, start=1):
+            ws.column_dimensions[chr(64 + i)].width = w
+
+    if avisos:
+        ws2 = wb.create_sheet('Pendencias')
+        ws2.append(['Origem', 'Aviso'])
+        for c in ws2[1]:
+            c.font = Font(bold=True, color='FFFFFF')
+            c.fill = PatternFill(start_color='1B4E8C', end_color='1B4E8C', fill_type='solid')
+        for origem, aviso in avisos:
+            ws2.append([NOMES_BANCO.get(origem, origem), aviso])
+        ws2.column_dimensions['A'].width = 15
+        ws2.column_dimensions['B'].width = 100
+
+    if not wb.sheetnames:
+        wb.create_sheet('Extrato')  # evita salvar arquivo sem nenhuma aba
+
+    wb.save(caminho_saida)
+
+
+def processar_pdf(caminho_pdf, pasta_saida):
+    nome_base = os.path.splitext(os.path.basename(caminho_pdf))[0]
+    blocos = extrair_blocos_por_banco(caminho_pdf)
+    transacoes_por_banco = {}
+    avisos = []
+    total = 0
+    for banco, texto in blocos:
+        if banco is None:
+            avisos.append(('(banco nao identificado)',
+                            'Um trecho do PDF nao bateu com nenhum layout de banco conhecido e foi ignorado.'))
+            continue
+        parser = BANK_PARSERS.get(banco)
+        if not parser:
+            avisos.append((banco, 'Banco identificado mas sem parser implementado ainda.'))
+            continue
+        transacoes, obs = parser(texto)
+        transacoes_por_banco.setdefault(banco, []).extend(transacoes)
+        total += len(transacoes)
+        if obs:
+            avisos.append((banco, obs))
+
+    caminho_saida = os.path.join(pasta_saida, f'{nome_base}.xlsx')
+    gerar_excel(transacoes_por_banco, avisos, caminho_saida)
+
+    arquivos_ofx = []
+    for banco, transacoes in transacoes_por_banco.items():
+        titulo_banco = NOMES_BANCO.get(banco, banco)
+        caminho_ofx = os.path.join(pasta_saida, f'{nome_base}_{titulo_banco}.ofx')
+        if gerar_ofx(transacoes, banco, caminho_ofx):
+            arquivos_ofx.append(caminho_ofx)
+
+    return caminho_saida, total, avisos, arquivos_ofx
+
+
+def _pasta_do_programa():
+    """Pasta onde esta o .exe (ou o .py, se rodando via Python direto)."""
+    if getattr(sys, 'frozen', False):
+        return os.path.dirname(sys.executable)
+    return os.path.dirname(os.path.abspath(__file__))
+
+
+if __name__ == '__main__':
+    rodando_como_exe = getattr(sys, 'frozen', False)
+    pasta_programa = _pasta_do_programa()
+
+    print('============================================')
+    print('  Conversor de Extrato PDF para Excel - Jean Vieira')
+    print('============================================')
+
+    if len(sys.argv) > 1:
+        # PDFs arrastados e soltos em cima do .exe (ou passados na linha de comando)
+        arquivos = sys.argv[1:]
+    else:
+        # Duplo clique sem arrastar nada: processa todo PDF que estiver na mesma pasta
+        arquivos = sorted(glob.glob(os.path.join(pasta_programa, '*.pdf')))
+
+    if not arquivos:
+        print()
+        print('Nenhum arquivo PDF encontrado.')
+        print(f'Coloque os extratos em PDF nesta pasta ({pasta_programa})')
+        print('e execute o programa novamente, ou arraste os PDFs em cima do .exe.')
+        if rodando_como_exe:
+            input('\nPressione Enter para sair...')
+        sys.exit(1)
+
+    pasta_saida = os.environ.get('PASTA_SAIDA') or pasta_programa
+    erros = 0
+    for caminho in arquivos:
+        try:
+            saida, n, avisos, arquivos_ofx = processar_pdf(caminho, pasta_saida)
+            print(f'{caminho} -> {saida} ({n} lancamentos, {len(avisos)} avisos, {len(arquivos_ofx)} ofx gerado(s))')
+        except Exception as e:
+            erros += 1
+            print(f'ERRO ao processar "{caminho}": {e}')
+
+    print()
+    print('============================================')
+    print(f'Concluido. {len(arquivos)} arquivo(s) processado(s), {erros} erro(s).')
+    print('Os arquivos .xlsx e .ofx foram gerados nesta mesma pasta.')
+    print('============================================')
+    if rodando_como_exe:
+        input('\nPressione Enter para sair...')
+    sys.exit(1 if erros else 0)

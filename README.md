@@ -1,2 +1,90 @@
 # conversor-extrato-pdf-excel-ofx
-Converte extrato bancario em PDF (Sicoob, Itau, Bradesco, Caixa, Banco do Brasil, Sicredi, Cresol, UniCred, Ailos/ViaCredi, Santander e mais) para Excel e OFX prontos para conciliacao. 100% offline, sem IA, sem custo, sem copiar e colar.
+
+Converte extrato bancario em PDF (Sicoob, Itau, Bradesco, Caixa, Banco do
+Brasil, Sicredi, Cresol, UniCred, Ailos/ViaCredi, Santander e mais) para
+Excel e OFX prontos para conciliacao. 100% offline, sem IA, sem custo, sem
+copiar e colar.
+
+Desenvolvido por [Jean Vieira](mailto:jean.vieira@hotmail.com), contador,
+pra eliminar a etapa manual de colar extrato em IA e digitar o resultado
+numa planilha.
+
+## Baixar (Windows, pronto pra usar)
+
+Nao precisa instalar Python nem nada. Baixe o executavel:
+
+**[Conversor_Extratos.exe (OneDrive)](https://1drv.ms/u/c/825c92623a580678/IQBv3lIzILhwRpzjzWwES2DEAfXNMhatZMoOutp5dzr5Z4U?e=eNAEuz)**
+
+Instrucoes completas de uso em [`Para_Equipe/LEIA-ME.txt`](Para_Equipe/LEIA-ME.txt).
+
+Na primeira execucao o Windows SmartScreen avisa "Editor desconhecido" -
+isso e normal pra um executavel sem certificado de assinatura paga, nao e
+virus. Clique em "Mais informacoes" -> "Executar assim mesmo".
+
+## O que gera
+
+Pra cada PDF, um arquivo por banco encontrado nele:
+
+- **`.xlsx`** com 4 colunas fixas: `Data` (dd/mm/aaaa), `Historico`,
+  `Valor` (sempre positivo, virgula decimal), `Tipo` (`C` ou `D`).
+- **`.ofx`** (formato OFX 1.02 SGML) pronto pra importar na conciliacao
+  bancaria do seu sistema contabil, com o codigo do banco (COMPE)
+  preenchido automaticamente.
+
+## Bancos suportados
+
+Sicoob, Caixa Economica Federal, Itau, UniCred, Cresol, Ailos/ViaCredi,
+Banco do Brasil, Bradesco, Sicredi e Santander.
+
+PDF de um banco ainda nao suportado nao trava a execucao: ele aparece na
+aba "Pendencias" da planilha, e o resto dos extratos e processado normal.
+Santander tem uma ressalva: o layout do PDF nao tem marcacao confiavel de
+credito/debito no texto extraido, entao alguns lancamentos vem marcados
+`[A VERIFICAR]` pra conferencia manual.
+
+## Rodar a partir do codigo-fonte
+
+Requer Python 3.10+.
+
+```bash
+pip install pdfplumber openpyxl
+python converter.py extrato1.pdf extrato2.pdf
+```
+
+Gera os `.xlsx`/`.ofx` na pasta atual (ou na pasta definida na variavel de
+ambiente `PASTA_SAIDA`).
+
+Pra gerar o `.exe` standalone (PyInstaller):
+
+```bash
+pip install pyinstaller
+python -m PyInstaller --onefile --name Conversor_Extratos --console converter.py
+```
+
+## Estrutura
+
+- `converter.py` - ponto de entrada: identifica o banco de cada pagina do
+  PDF, agrupa por banco, chama o parser correspondente e gera `.xlsx`/`.ofx`.
+- `bancos.py` - um `parse_<banco>(texto)` por banco.
+- `ofx_export.py` - gera o `.ofx` a partir das mesmas transacoes usadas no
+  Excel (formato validado contra um `.ofx` real de referencia).
+- `CONTEXTO_PROJETO.md` - notas de desenvolvimento: status de validacao de
+  cada parser, decisoes de formato do OFX, proximos passos.
+
+## Aviso de responsabilidade
+
+Ferramenta oferecida como esta, gratuita, sem garantia. Agiliza a
+digitacao, nao substitui a conferencia profissional. Antes de usar
+qualquer planilha ou `.ofx` gerado no fechamento contabil de um cliente,
+confira a soma dos creditos e a soma dos debitos contra os totais que o
+proprio extrato do banco declara.
+
+## Licenca
+
+[MIT](LICENSE) - livre pra usar, copiar e repassar, inclusive em trabalho
+comercial.
+
+## Contato
+
+Duvidas, bug ou PDF de banco ainda nao suportado: Jean Vieira -
+(49) 99907-9884 - jean.vieira@hotmail.com

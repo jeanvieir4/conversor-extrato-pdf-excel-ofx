@@ -1,0 +1,99 @@
+CONVERSOR DE EXTRATO BANCARIO (PDF -> EXCEL + OFX)
+==================================================================
+Jean Vieira | (49) 99907-9884 | jean.vieira@hotmail.com
+
+Nao precisa instalar nada. So o arquivo Conversor_Extratos.exe.
+
+AVISO NA PRIMEIRA EXECUCAO (LEIA ANTES DE RODAR)
+--------------------------------------------------
+Na primeira vez que abrir o programa, o Windows provavelmente vai mostrar
+uma tela azul "O Windows protegeu o computador" com "Editor desconhecido",
+e o antivirus pode dar um alerta. Isso NAO significa que e virus: acontece
+porque o programa nao tem um certificado de assinatura digital (esse tipo
+de certificado e pago e caro, e nao compensa pra uma ferramenta interna
+gratuita). E um aviso padrao do Windows pra qualquer .exe de um
+desenvolvedor independente.
+
+Pra rodar mesmo assim:
+1. Na tela azul do SmartScreen, clique em "Mais informacoes".
+2. Clique no botao "Executar assim mesmo" que aparece.
+Se o antivirus colocar o arquivo em quarentena, restaure o arquivo e
+adicione uma excecao pra ele.
+
+COMO USAR
+---------
+1. Coloque o(s) extrato(s) em PDF na MESMA PASTA deste programa
+   (Conversor_Extratos.exe).
+2. De dois cliques em "Conversor_Extratos.exe".
+3. Aguarde a janela preta terminar de processar (ela mostra o
+   progresso de cada PDF).
+4. Pra cada PDF sao gerados, na mesma pasta:
+   - um .xlsx com o mesmo nome do PDF (ex: "extrato_cliente.pdf" gera
+     "extrato_cliente.xlsx");
+   - um .ofx pra cada banco encontrado no PDF, pronto pra importar
+     direto no sistema de conciliacao (ex: "extrato_cliente_Sicoob.ofx").
+5. Aperte Enter (ou feche a janela) quando terminar.
+
+Nao precisa mais passar pelo OFX Generator: o .ofx ja sai pronto, com o
+codigo do banco (COMPE) preenchido automaticamente.
+
+ALTERNATIVA: ARRASTAR E SOLTAR
+-------------------------------
+Voce tambem pode selecionar um ou mais PDFs e arrasta-los para cima
+do icone do Conversor_Extratos.exe. Nesse caso ele processa so os
+arquivos arrastados, mesmo se houver outros PDFs na pasta.
+
+BANCOS SUPORTADOS
+------------------
+Sicoob, Caixa Economica Federal, Itau, UniCred, Cresol, Ailos/ViaCredi,
+Banco do Brasil, Bradesco, Sicredi e Santander.
+
+Santander: o layout do PDF nao tem uma marcacao confiavel de credito
+ou debito, entao alguns lancamentos podem vir marcados
+"[A VERIFICAR]" na coluna Observacao. Confira esses manualmente.
+
+Se um PDF for de um banco ainda nao suportado (ex: Banrisul, Sulcredi,
+Votorantim, Banco Civia), ele nao gera lancamentos e aparece um aviso
+na aba "Pendencias" da planilha. Nesse caso, envie o PDF pro Jean pra
+adicionar suporte aquele banco.
+
+SOBRE O .OFX GERADO
+---------------------
+O codigo do banco (Bank ID / COMPE) e preenchido automaticamente,
+conforme o banco identificado no PDF. O numero da conta (Account ID)
+sai com um valor generico fixo, porque nao da pra extrair de forma
+confiavel do PDF. Se o seu sistema de conciliacao exigir o numero real
+da conta, abra o .ofx num editor de texto e troque o valor que vem
+depois de "ACCTID>".
+
+CONFERENCIA IMPORTANTE
+------------------------
+Sempre confira a soma dos creditos e a soma dos debitos da planilha
+gerada contra os totais que o proprio extrato do banco declara
+(normalmente "Total", "Saldo do periodo" ou similar) antes de usar a
+planilha no fechamento.
+
+PROBLEMAS COMUNS
+-----------------
+- "Nenhum arquivo PDF encontrado": verifique se o(s) PDF(s) estao na
+  mesma pasta do Conversor_Extratos.exe.
+- Aviso do SmartScreen ou do antivirus na primeira execucao: ver secao
+  "AVISO NA PRIMEIRA EXECUCAO" no topo deste arquivo.
+
+AVISO DE RESPONSABILIDADE
+---------------------------
+Ferramenta oferecida "como esta", gratuita, sem garantia. É um auxilio
+pra agilizar a digitacao, nao substitui a conferencia profissional.
+Antes de usar qualquer planilha ou .ofx gerado no fechamento contabil de
+um cliente, confira sempre a soma dos creditos e a soma dos debitos
+contra os totais que o proprio extrato do banco declara. Quem usa a
+ferramenta e responsavel por essa conferencia.
+
+LICENCA
+--------
+Este programa e livre pra usar e repassar pra quem voce quiser, inclusive
+em outro escritorio de contabilidade. Termos completos (licenca MIT) no
+arquivo LICENSE.txt, nesta mesma pasta.
+
+Duvidas ou PDF de banco nao suportado: Jean Vieira
+(49) 99907-9884 - jean.vieira@hotmail.com

@@ -1,0 +1,18 @@
+# Extratos e resultados gerados - dados financeiros de clientes, nunca versionar
+*.pdf
+*.PDF
+*.xlsx
+*.xlsm
+*.ofx
+~$*
+
+# Executavel compilado (51MB+, distribuido via OneDrive/GitHub Releases, nao pelo git)
+*.exe
+
+# Python
+__pycache__/
+*.pyc
+
+# Saida do PyInstaller
+build/
+dist/
