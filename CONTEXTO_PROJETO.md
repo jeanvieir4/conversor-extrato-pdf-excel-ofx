@@ -159,6 +159,26 @@ identificar o padrao de linha pra data/descricao/valor/tipo, escrever
 `parse_<banco>` em `bancos.py`, adicionar o detector em `DETECTORES` no
 `converter.py`, testar e validar contra os totais do extrato.
 
+## Ideias futuras (nao prioritario ainda)
+
+- **Interface mais amigavel em vez da janela preta (console)**: a tela
+  estilo DOS do `.exe` esta assustando alguns usuarios menos tecnicos
+  (relatado pelo Jean, sessao 2026-09-08). Opcoes a considerar quando for
+  priorizar isso:
+  - GUI simples com `tkinter` (biblioteca padrao do Python, sem
+    dependencia nova pra instalar/empacotar) - botao de arrastar PDF,
+    barra de progresso, mensagem de conclusao.
+  - `pywebview` pra reaproveitar o mesmo visual "ledger" ja usado na
+    pagina de apresentacao (HTML/CSS que ja existe em `docs/index.html`),
+    rodando como janela nativa em vez de terminal.
+  - Caminho mais simples e incremental: manter o console mas deixar a
+    saida mais clara/menos "tecnica" (emoji ou cores via `colorama`,
+    menos jargao) sem reescrever a interface inteira.
+  Qualquer opcao com GUI muda o build do PyInstaller (de `--console` pra
+  `--windowed`, ou uma janela separada) - testar bem o fluxo de erro
+  (hoje o console mostra a mensagem de erro e pausa; uma GUI precisa de
+  um jeito equivalente de comunicar erro sem fechar sozinha).
+
 ## Preferencias do usuario (aplicam a este projeto)
 
 - Portugues do Brasil, padrao numerico brasileiro (milhar com ponto,
