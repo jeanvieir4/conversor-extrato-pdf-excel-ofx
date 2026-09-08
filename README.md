@@ -86,6 +86,14 @@ proprio extrato do banco declara.
 [MIT](LICENSE) - livre pra usar, copiar e repassar, inclusive em trabalho
 comercial.
 
+## Apoie o projeto
+
+Se este programa te ajudou, voce pode apoiar o desenvolvimento via Pix:
+
+**Chave Pix:** jean.vieira@hotmail.com
+
+![QR Code Pix](./assets/qrcode-pix.png)
+
 ## Contato
 
 Duvidas, bug ou PDF de banco ainda nao suportado: Jean Vieira -
