@@ -13,7 +13,7 @@ numa planilha.
 
 Nao precisa instalar Python nem nada. Baixe o executavel:
 
-**[Conversor_Extratos.exe (OneDrive)](https://1drv.ms/u/c/825c92623a580678/IQBv3lIzILhwRpzjzWwES2DEAfXNMhatZMoOutp5dzr5Z4U?e=eNAEuz)**
+**[Conversor_Extratos.exe (GitHub Releases)](https://github.com/jeanvieir4/conversor-extrato-pdf-excel-ofx/releases/download/1.0/Conversor_Extratos.exe)**
 
 Instrucoes completas de uso em [`Para_Equipe/LEIA-ME.txt`](Para_Equipe/LEIA-ME.txt).
 
