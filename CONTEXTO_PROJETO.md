@@ -201,21 +201,25 @@ em `gui.html`). Por isso tem dois caminhos que SAO garantidos:
    `pywebviewready`), pré-preenchendo a lista. Os dois caminhos foram
    clicados e confirmados funcionando (nao so testado por logica).
 
-**ARMADILHA - primeira execucao do .exe empacotado pode demorar MUITO
-(10 a 30+ segundos) com a tela em branco**: isso e normal (extracao do
-onefile + antivirus escaneando os arquivos recem-extraidos + WebView2
-"esquentando"), NAO e o mesmo bug de travamento do pywebview 6.x. Rodando
-`python gui.py` direto (sem empacotar) e bem mais rapido (~7s). Testado e
-confirmado: depois de esperar, a janela sempre renderizou e funcionou
-normal. Isso precisa virar uma tela de carregamento na versao final (por
-enquanto a janela abre com fundo branco vazio antes do HTML carregar, o
-que parece travado sem ser) - anotar como proximo ajuste antes de
-distribuir pra equipe, senao vai gerar a mesma reclamacao que a tela
-preta do console gerava.
+**ARMADILHA (RESOLVIDA) - primeira execucao do .exe empacotado demorava
+MUITO (10 a 30+ segundos) com a tela em branco**: onefile extrai tudo de
+novo pra uma pasta temporaria TODA vez que abre (+ antivirus escaneando
+os arquivos recem-extraidos de novo a cada vez), diferente de rodar
+`python gui.py` direto (~7s, sem essa extracao). Corrigido com duas
+mudancas, ambas testadas com controle de tela real (nao so por logica):
+1. Build trocado de `--onefile` pra `--onedir` (pasta com o .exe e os
+   DLLs ja extraidos, sem extracao repetida a cada abertura) - eliminou a
+   demora na pratica, abriu rapido nas duas execucoes testadas.
+2. `background_color='#EEF2E9'` no `webview.create_window()` (mesma cor
+   de fundo do app) - pywebview usa branco puro por padrao, o que fazia
+   qualquer atraso remanescente parecer tela travada. Sem isso o
+   parametro default e `#FFFFFF`.
 
-Build: `python -m PyInstaller --onefile --console --add-data "gui.html;."
-gui.py` (manter `--console` ate decidir junto com o Jean se troca pra
-`--windowed`; por enquanto o console ajuda a ver erro se algo falhar).
+Build agora: `python -m PyInstaller --onedir --console --add-data
+"gui.html;." gui.py` (gera uma PASTA em vez de um arquivo so - precisa
+zipar junto com LEIA-ME.txt e LICENSE.txt igual o `.exe` de console,
+nao da mais pra mandar um arquivo unico). Manter `--console` ate decidir
+junto com o Jean se troca pra `--windowed`.
 
 Status: testado e validado pelo Claude com controle de tela real (nao so
 por logica) - janela renderiza, os dois fluxos de selecao de arquivo

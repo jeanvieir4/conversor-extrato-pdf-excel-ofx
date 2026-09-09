@@ -77,6 +77,10 @@ def main():
         width=760,
         height=680,
         min_size=(560, 480),
+        background_color='#EEF2E9',  # mesma cor de fundo do app - sem isso
+                                       # a janela fica branco-estourado (e
+                                       # parece travada) enquanto o WebView2
+                                       # ainda esta carregando o HTML
     )
     api.window = window
     webview.start(gui='edgechromium' if sys.platform == 'win32' else None)
