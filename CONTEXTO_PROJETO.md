@@ -159,25 +159,70 @@ identificar o padrao de linha pra data/descricao/valor/tipo, escrever
 `parse_<banco>` em `bancos.py`, adicionar o detector em `DETECTORES` no
 `converter.py`, testar e validar contra os totais do extrato.
 
-## Ideias futuras (nao prioritario ainda)
+## Interface grafica (GUI) - em teste
 
-- **Interface mais amigavel em vez da janela preta (console)**: a tela
-  estilo DOS do `.exe` esta assustando alguns usuarios menos tecnicos
-  (relatado pelo Jean, sessao 2026-09-08). Opcoes a considerar quando for
-  priorizar isso:
-  - GUI simples com `tkinter` (biblioteca padrao do Python, sem
-    dependencia nova pra instalar/empacotar) - botao de arrastar PDF,
-    barra de progresso, mensagem de conclusao.
-  - `pywebview` pra reaproveitar o mesmo visual "ledger" ja usado na
-    pagina de apresentacao (HTML/CSS que ja existe em `docs/index.html`),
-    rodando como janela nativa em vez de terminal.
-  - Caminho mais simples e incremental: manter o console mas deixar a
-    saida mais clara/menos "tecnica" (emoji ou cores via `colorama`,
-    menos jargao) sem reescrever a interface inteira.
-  Qualquer opcao com GUI muda o build do PyInstaller (de `--console` pra
-  `--windowed`, ou uma janela separada) - testar bem o fluxo de erro
-  (hoje o console mostra a mensagem de erro e pausa; uma GUI precisa de
-  um jeito equivalente de comunicar erro sem fechar sozinha).
+Motivo: a tela estilo DOS do `.exe` console estava assustando usuarios
+menos tecnicos (relatado pelo Jean, sessao 2026-09-08). Escolhida a opcao
+`pywebview` (janela nativa reaproveitando o mesmo visual "ledger" usado em
+`docs/index.html`) em vez de `tkinter`, por ficar bem mais bonita sem
+precisar reescrever o design.
+
+- `gui.py`: janela pywebview. Classe `Api` expoe `escolher_pdfs()`
+  (dialogo nativo de arquivo) e `converter(caminhos)` (chama o mesmo
+  `processar_pdf` do `converter.py` - a logica de conversao nao mudou,
+  so a "casca") pro JS via `window.pywebview.api.*`.
+- `gui.html`: interface (dropzone, lista de arquivos, botao Converter,
+  lista de resultados com pill verde/vermelho). Mesma paleta de cores do
+  `docs/index.html`, mas layout de ferramenta (nao de pagina de
+  apresentacao) - sem tema escuro de proposito, e um app so, nao artifact.
+
+**ARMADILHA IMPORTANTE - pywebview 6.x trava a janela**: a versao 6.2.1
+(a mais recente no momento) tem um bug real (nao so log poluido) na
+integracao com WebView2 nesta maquina - ao abrir a janela, tenta
+enumerar `window.native.AccessibilityObject...` por reflexao e entra em
+recursao infinita, deixando a janela com "Nao esta respondendo". A
+correcao foi fixar a versao: `pip install pywebview==4.4.1` (sem esse
+recurso experimental `window.native`, mais estavel). **Nunca fazer
+`pip install --upgrade pywebview` sem testar antes que a janela abre e
+continua respondendo (`Get-Process ... | Select Responding` no
+PowerShell) por pelo menos uns 10 segundos** - o travamento nao aparece
+imediato no log, só quando o processo trava mesmo.
+
+Drag-and-drop de arquivo pra DENTRO da janela ja aberta (`file.pywebviewFullPath`
+no JS) testado e confirmado que NAO funciona nesta maquina/versao do
+WebView2 Runtime - cai no aviso "Nao consegui ler o caminho do arquivo
+arrastado" (comportamento esperado, ver `dropzone.addEventListener('drop', ...)`
+em `gui.html`). Por isso tem dois caminhos que SAO garantidos:
+1. Botao "clique pra escolher" (dialogo nativo, `Api.escolher_pdfs`).
+2. Arrastar o(s) PDF(s) em cima do ICONE do `.exe` no Explorer (nao pra
+   dentro da janela) - o Windows chama o programa com os caminhos em
+   `sys.argv`, igual o `.exe` de console ja fazia. `Api.arquivos_iniciais()`
+   devolve esses caminhos pro JS assim que a janela carrega (evento
+   `pywebviewready`), pré-preenchendo a lista. Os dois caminhos foram
+   clicados e confirmados funcionando (nao so testado por logica).
+
+**ARMADILHA - primeira execucao do .exe empacotado pode demorar MUITO
+(10 a 30+ segundos) com a tela em branco**: isso e normal (extracao do
+onefile + antivirus escaneando os arquivos recem-extraidos + WebView2
+"esquentando"), NAO e o mesmo bug de travamento do pywebview 6.x. Rodando
+`python gui.py` direto (sem empacotar) e bem mais rapido (~7s). Testado e
+confirmado: depois de esperar, a janela sempre renderizou e funcionou
+normal. Isso precisa virar uma tela de carregamento na versao final (por
+enquanto a janela abre com fundo branco vazio antes do HTML carregar, o
+que parece travado sem ser) - anotar como proximo ajuste antes de
+distribuir pra equipe, senao vai gerar a mesma reclamacao que a tela
+preta do console gerava.
+
+Build: `python -m PyInstaller --onefile --console --add-data "gui.html;."
+gui.py` (manter `--console` ate decidir junto com o Jean se troca pra
+`--windowed`; por enquanto o console ajuda a ver erro se algo falhar).
+
+Status: testado e validado pelo Claude com controle de tela real (nao so
+por logica) - janela renderiza, os dois fluxos de selecao de arquivo
+funcionam, conversao bate com os totais corretos (testado com Sicoob 310,
+Caixa 597, Itau 104 lancamentos, todos conferem). Falta o Jean decidir se
+quer substituir o .exe de console pela GUI na distribuicao oficial (`Para_Equipe`,
+release do GitHub) ou oferecer as duas opcoes.
 
 ## Preferencias do usuario (aplicam a este projeto)
 
