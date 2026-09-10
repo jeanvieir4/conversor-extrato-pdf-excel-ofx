@@ -131,7 +131,22 @@ pagina.
   texto.lower()` pegando mencao a esse banco como texto livre dentro da
   descricao de uma transacao de outro banco.
 - Ailos / ViaCredi (mesmo sistema, cooperativa aparece no cabecalho)
-- Banco do Brasil (excluir linhas "BB Rende Facil", mesma logica do Itau)
+- Banco do Brasil - dois formatos, `parse_bb` detecta qual e:
+  1. Formato atual (com colunas "Ag. origem"/"Lote" no cabecalho) - excluir
+     linhas "BB Rende Facil", mesma logica do Itau.
+  2. Formato de 2016 (`_parse_bb_2016`), sem "Ag. origem"/"Lote". Saldo so
+     aparece na ULTIMA linha de um grupo de lancamentos do mesmo dia
+     (todas as linhas anteriores do grupo ficam sem saldo), e "Documento"
+     se distingue de "Valor" por nao ter virgula decimal. Descricao pode
+     ter uma 2a linha de continuacao (ex: "SEFAZ RECURSOS ORDINARIOS")
+     sem data na frente - cuidado pra nao confundir com a linha de saldo
+     final "S A L D O" (tambem sem "documento" antes do valor, mas
+     comeca com data, entao nao deve ser tratada como continuacao).
+  ARMADILHA: os dois formatos tem "Dt. movimento" E "Dt. balancete" no
+  cabecalho (so a ordem dos dois muda) - NAO da pra distinguir por isso
+  sozinho (peguei uma regressao no formato atual testando so com isso).
+  O sinal confiavel e a AUSENCIA de "Ag. origem" pra identificar o
+  formato de 2016.
 - Bradesco (cuidado: o layout dos primeiros lancamentos de credito difere
   do layout dos lancamentos de debito dentro do MESMO extrato - ver
   `parse_bradesco` pra entender a logica de linha "tipo" + linha de

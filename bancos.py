@@ -351,7 +351,62 @@ def parse_ailos(texto):
 # ---------------------------------------------------------------------------
 # BANCO DO BRASIL
 # ---------------------------------------------------------------------------
+def _parse_bb_2016(texto):
+    """Layout mais antigo do extrato do BB (visto em extrato de 2016),
+    bem diferente do layout atual com 'Ag. origem'/'Lote':
+      'Dt. movimento Dt. balancete Historico Documento Valor R$ Saldo'
+      '25/01/2016 Ordem Bancaria 201.601.250.006.341 34.493.267,52 C 34.493.267,52 C'
+      '26/01/2016 +Ordem Bancaria 201.601.250.006.350 41.909,68 C'
+      'SEFAZ RECURSOS ORDINARIOS'                          <- linha de continuacao
+    O saldo corrente (ultimos 2 tokens) so aparece na ULTIMA linha de um
+    grupo de lancamentos do mesmo dia - por isso e sempre opcional no
+    regex. 'Documento' distingue de 'Valor' por nao ter virgula decimal.
+    Validado batendo soma dos creditos - soma dos debitos == saldo final
+    'S A L D O' declarado no proprio extrato (ver CONTEXTO_PROJETO.md).
+    """
+    padrao = re.compile(
+        r'^(\d{2}/\d{2}/\d{4})\s+(\+?.+?)\s+([\d.]+)\s+([\d.]+,\d{2})\s+([CD])(?:\s+[\d.]+,\d{2}\s+[CD])?$'
+    )
+    linhas = _linhas_uteis(texto)
+    out = []
+    i = 0
+    while i < len(linhas):
+        l = linhas[i].strip()
+        m = padrao.match(l)
+        if not m:
+            i += 1
+            continue
+        data_str, historico, documento, valor_str, tipo = m.groups()
+        chave = historico.replace(' ', '').upper()
+        if chave in ('SALDOANTERIOR', 'SALDO'):
+            i += 1
+            continue
+        historico = historico.lstrip('+').strip()
+        if i + 1 < len(linhas):
+            prox = linhas[i + 1].strip()
+            comeca_com_data = re.match(r'^\d{2}/\d{2}/\d{4}\s', prox)
+            if not padrao.match(prox) and not comeca_com_data and prox and not prox.upper().startswith('OBSERVA'):
+                historico = f'{historico} {prox}'.strip()
+                i += 1
+        dd, mm, yyyy = data_str.split('/')
+        try:
+            dt = date(int(yyyy), int(mm), int(dd))
+        except ValueError:
+            i += 1
+            continue
+        out.append({'data': dt, 'historico': historico, 'valor': _dec(valor_str), 'tipo': tipo, 'obs': ''})
+        i += 1
+    return out, None
+
+
 def parse_bb(texto):
+    # Os dois layouts do BB tem 'Dt. movimento' e 'Dt. balancete' no
+    # cabecalho (so a ordem muda) - nao da pra distinguir por isso. O
+    # layout atual (com 'Ag. origem'/'Lote') tem essas 2 colunas extras
+    # que o layout de 2016 nao tem; usa a AUSENCIA delas como sinal.
+    if 'Dt. balancete' in texto and 'Ag. origem' not in texto:
+        return _parse_bb_2016(texto)
+
     padrao = re.compile(
         r'^(\d{2}/\d{2}/\d{4})\s+\d+\s+(.+?)\s+([\d\.]+)\s+([\d\.]+,\d{2})\s+([CD])(?:\s+[\d\.]+,\d{2}\s+[CD])?$'
     )
