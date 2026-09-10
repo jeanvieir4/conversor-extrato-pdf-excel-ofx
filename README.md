@@ -11,13 +11,18 @@ numa planilha.
 
 ## Baixar (Windows, pronto pra usar)
 
-Nao precisa instalar Python nem nada. Baixe o zip (contem o `.exe`, o
-`LEIA-ME.txt` com instrucoes e a `LICENSE.txt`) e extraia:
+Nao precisa instalar Python nem nada. Baixe o zip (contem a pasta do
+programa, o `LEIA-ME.txt` com instrucoes e a `LICENSE.txt`) e extraia,
+mantendo a pasta `Conversor_Extratos` inteira junto (o `.exe` precisa dos
+arquivos que ficam ao lado dele em `_internal`):
 
 **[Conversor_Extratos.zip (GitHub Releases)](https://github.com/jeanvieir4/conversor-extrato-pdf-excel-ofx/releases/download/1.0/Conversor_Extratos.zip)**
 
 O LEIA-ME.txt tambem esta neste repositorio em
 [`Para_Equipe/LEIA-ME.txt`](Para_Equipe/LEIA-ME.txt).
+
+Interface grafica simples: arraste o(s) PDF(s) na janela (ou em cima do
+icone do `.exe`) ou clique pra escolher, depois clique em Converter.
 
 Na primeira execucao o Windows SmartScreen avisa "Editor desconhecido" -
 isso e normal pra um executavel sem certificado de assinatura paga, nao e
@@ -54,24 +59,47 @@ python converter.py extrato1.pdf extrato2.pdf
 ```
 
 Gera os `.xlsx`/`.ofx` na pasta atual (ou na pasta definida na variavel de
-ambiente `PASTA_SAIDA`).
+ambiente `PASTA_SAIDA`). Esse e o modo console/linha de comando - sem
+interface grafica, util pra rodar em lote ou depurar um parser.
 
-Pra gerar o `.exe` standalone (PyInstaller):
+Pra rodar a interface grafica direto do codigo-fonte:
+
+```bash
+pip install pywebview==4.4.1
+python gui.py
+```
+
+(A versao 4.4.1 e proposital - versoes mais novas do pywebview tem um bug
+conhecido de travamento com certas versoes do WebView2. Ver
+`CONTEXTO_PROJETO.md`.)
+
+Pra gerar o `.exe` da GUI (o que e distribuido oficialmente, PyInstaller
+em modo pasta, sem console):
 
 ```bash
 pip install pyinstaller
-python -m PyInstaller --onefile --name Conversor_Extratos --console converter.py
+python -m PyInstaller --onedir --windowed --name Conversor_Extratos --add-data "gui.html;." gui.py
+```
+
+Ou o `.exe` de console classico, se preferir essa opcao:
+
+```bash
+python -m PyInstaller --onefile --console --name Conversor_Extratos_Console converter.py
 ```
 
 ## Estrutura
 
-- `converter.py` - ponto de entrada: identifica o banco de cada pagina do
-  PDF, agrupa por banco, chama o parser correspondente e gera `.xlsx`/`.ofx`.
+- `converter.py` - nucleo: identifica o banco de cada pagina do PDF,
+  agrupa por banco, chama o parser correspondente e gera `.xlsx`/`.ofx`.
+  Tambem funciona como ponto de entrada console (`python converter.py`).
 - `bancos.py` - um `parse_<banco>(texto)` por banco.
 - `ofx_export.py` - gera o `.ofx` a partir das mesmas transacoes usadas no
   Excel (formato validado contra um `.ofx` real de referencia).
+- `gui.py` / `gui.html` - interface grafica (pywebview) que reaproveita a
+  logica do `converter.py` - e o que vira o `.exe` distribuido oficialmente.
 - `CONTEXTO_PROJETO.md` - notas de desenvolvimento: status de validacao de
-  cada parser, decisoes de formato do OFX, proximos passos.
+  cada parser, decisoes de formato do OFX, armadilhas da GUI, proximos
+  passos.
 
 ## Aviso de responsabilidade
 
