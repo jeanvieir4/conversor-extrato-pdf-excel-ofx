@@ -2,9 +2,7 @@ CONVERSOR DE EXTRATO BANCARIO (PDF -> EXCEL + OFX)
 ==================================================================
 Jean Vieira | (49) 99907-9884 | jean.vieira@hotmail.com
 
-Nao precisa instalar nada. Extraia o zip e mantenha a pasta
-"Conversor_Extratos" inteira junto (o .exe precisa dos arquivos que
-ficam ao lado dele na pasta "_internal" - nao tire so o .exe de dentro).
+Nao precisa instalar nada. So o arquivo Conversor_Extratos.exe.
 
 AVISO NA PRIMEIRA EXECUCAO (LEIA ANTES DE RODAR)
 --------------------------------------------------
@@ -24,28 +22,26 @@ adicione uma excecao pra ele.
 
 COMO USAR
 ---------
-1. De dois cliques em "Conversor_Extratos.exe" (dentro da pasta
-   "Conversor_Extratos"). Abre uma janela normal do programa.
-2. Clique na area "Arraste os PDFs aqui ou clique pra escolher" pra
-   selecionar o(s) extrato(s) em PDF (abre o seletor de arquivo do
-   Windows), ou arraste um ou mais PDFs em cima do ICONE do
-   Conversor_Extratos.exe direto no Explorer (nesse caso os PDFs ja
-   aparecem selecionados quando a janela abrir).
-3. Clique em "Converter". A propria janela mostra o resultado de cada
-   arquivo (quantos lancamentos, quantos avisos, se deu erro).
-4. Pra cada PDF sao gerados, na mesma pasta do programa:
+1. Coloque o(s) extrato(s) em PDF na MESMA PASTA deste programa
+   (Conversor_Extratos.exe).
+2. De dois cliques em "Conversor_Extratos.exe".
+3. Aguarde a janela preta terminar de processar (ela mostra o
+   progresso de cada PDF).
+4. Pra cada PDF sao gerados, na mesma pasta:
    - um .xlsx com o mesmo nome do PDF (ex: "extrato_cliente.pdf" gera
      "extrato_cliente.xlsx");
    - um .ofx pra cada banco encontrado no PDF, pronto pra importar
      direto no sistema de conciliacao (ex: "extrato_cliente_Sicoob.ofx").
+5. Aperte Enter (ou feche a janela) quando terminar.
 
 Nao precisa mais passar pelo OFX Generator: o .ofx ja sai pronto, com o
 codigo do banco (COMPE) preenchido automaticamente.
 
-Na primeira vez que abrir, a janela pode demorar alguns segundos pra
-aparecer com fundo verde-claro antes do conteudo carregar - isso e
-normal (o Windows esta preparando o componente que desenha a janela),
-nao e travamento. Espere um pouco antes de fechar achando que travou.
+ALTERNATIVA: ARRASTAR E SOLTAR
+-------------------------------
+Voce tambem pode selecionar um ou mais PDFs e arrasta-los para cima
+do icone do Conversor_Extratos.exe. Nesse caso ele processa so os
+arquivos arrastados, mesmo se houver outros PDFs na pasta.
 
 BANCOS SUPORTADOS
 ------------------
@@ -79,15 +75,10 @@ planilha no fechamento.
 
 PROBLEMAS COMUNS
 -----------------
+- "Nenhum arquivo PDF encontrado": verifique se o(s) PDF(s) estao na
+  mesma pasta do Conversor_Extratos.exe.
 - Aviso do SmartScreen ou do antivirus na primeira execucao: ver secao
   "AVISO NA PRIMEIRA EXECUCAO" no topo deste arquivo.
-- Janela com fundo verde-claro vazio por alguns segundos ao abrir: e
-  normal, espere carregar (ver "COMO USAR" acima).
-- Arrastar PDF pra DENTRO da janela ja aberta pode nao funcionar
-  (depende da versao do componente do Windows usado pra desenhar a
-  janela) - nesse caso use o botao "clique pra escolher" ou arraste em
-  cima do ICONE do programa no Explorer (antes de abrir), que sempre
-  funciona.
 
 AVISO DE RESPONSABILIDADE
 ---------------------------

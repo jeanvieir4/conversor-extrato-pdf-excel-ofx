@@ -17,7 +17,3 @@ __pycache__/
 # Saida do PyInstaller
 build/
 dist/
-
-# Pasta do programa empacotado (modo --onedir: exe + DLLs + _internal),
-# copiada manualmente pra Para_Equipe antes de zipar - nao e codigo-fonte
-Para_Equipe/Conversor_Extratos/

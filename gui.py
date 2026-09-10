@@ -65,20 +65,6 @@ class Api:
         return resultados
 
 
-def _mostrar_erro_fatal(mensagem):
-    """Sem console (--windowed), um erro na inicializacao faria o programa
-    sumir sem explicacao nenhuma. Mostra uma caixa de mensagem nativa do
-    Windows como ultimo recurso - nao depende de nenhuma biblioteca alem
-    do proprio Windows."""
-    try:
-        import ctypes
-        ctypes.windll.user32.MessageBoxW(
-            0, mensagem, 'Conversor de Extratos - Erro ao iniciar', 0x10  # MB_ICONERROR
-        )
-    except Exception:
-        pass
-
-
 def main():
     arquivos_iniciais = [a for a in sys.argv[1:] if a.lower().endswith('.pdf')]
     api = Api(arquivos_iniciais)
@@ -101,12 +87,4 @@ def main():
 
 
 if __name__ == '__main__':
-    try:
-        main()
-    except Exception as e:
-        import traceback
-        _mostrar_erro_fatal(
-            f'O programa nao conseguiu abrir.\n\n{e}\n\n'
-            f'Detalhes tecnicos:\n{traceback.format_exc()}'
-        )
-        sys.exit(1)
+    main()
