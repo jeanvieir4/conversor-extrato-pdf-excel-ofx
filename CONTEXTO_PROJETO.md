@@ -192,6 +192,22 @@ pagina.
      saldo). Linhas "SALDO ANTERIOR" / "SALDO DO DIA" sao ignoradas.
      Validado com extrato real: 126 lancamentos, 0 avisos, saldo bateu
      exato (3.673,73 + creditos - debitos = 3.387,63).
+
+     VARIANTE do formato 3 (`_parse_bb_dia_lote_data_separada`): o mesmo
+     cabecalho "Dia Lote Documento", mas o pdfplumber as vezes extrai a
+     DATA sozinha numa linha propria (ou "DD/MM/AAAA categoria" junto),
+     SEM repetir a data na linha de lote/documento/valor - diferente do
+     formato 3 padrao, onde data e valor vem na mesma linha. Rodava e
+     nao achava NENHUMA transacao (nem aviso, nem erro - so silencio) no
+     formato 3 padrao. Tratado como fallback dentro de `parse_bb`: tenta
+     `_parse_bb_dia_lote` primeiro (intocado), e SO chama a variante se
+     vier vazio - nunca roda no lugar do parser original ja validado.
+     LIMITACAO CONHECIDA: linhas de texto livre entre uma transacao e a
+     proxima (continuacao da anterior + categoria da proxima, sem
+     separador confiavel) sao concatenadas no historico da transacao
+     seguinte - descricao pode sair meio misturada, mas data/valor/tipo
+     sempre corretos. Validado com extrato real: 11 lancamentos, saldo
+     bateu exato (1.812,75 + creditos - debitos = 386,36).
   ARMADILHA: os formatos 1 e 2 tem "Dt. movimento" E "Dt. balancete" no
   cabecalho (so a ordem dos dois muda) - NAO da pra distinguir por isso
   sozinho (peguei uma regressao no formato atual testando so com isso).

@@ -472,9 +472,84 @@ def _parse_bb_dia_lote(texto):
     return out, None
 
 
+def _parse_bb_dia_lote_data_separada(texto):
+    """Variante do terceiro layout do BB ('Dia Lote Documento') onde a
+    extracao de texto do pdfplumber separa a DATA numa linha propria
+    (sozinha, ou com uma categoria colada: 'DD/MM/AAAA Transferencia
+    recebida'), sem repetir a data na linha de lote/documento/valor -
+    diferente do padrao tratado por `_parse_bb_dia_lote` (onde data e
+    valor vem na MESMA linha). So e chamada como fallback quando
+    `_parse_bb_dia_lote` roda e nao encontra nenhuma transacao nesse
+    texto (ver `parse_bb` mais abaixo) - nunca roda no lugar dela.
+    Validado batendo saldo anterior + soma dos lancamentos == saldo
+    final 'S A L D O' declarado no proprio extrato.
+    LIMITACAO CONHECIDA: as linhas de texto livre entre uma transacao e
+    a proxima (continuacao da transacao anterior + categoria da
+    proxima, sem separador confiavel entre as duas) sao todas
+    concatenadas no historico da transacao seguinte - a descricao pode
+    sair um pouco misturada, mas data/valor/tipo sempre ficam corretos.
+    """
+    padrao_data = re.compile(r'^(\d{2}/\d{2}/\d{4})\s*(.*)$')
+    padrao_transacao = re.compile(
+        r'^(?:(\d+)\s+)?(.*?)\s+([\d.]+,\d{2})\s*\(([+-])\)$'
+    )
+    linhas = _linhas_uteis(texto)
+    out = []
+    data_atual = None
+    texto_pendente = []
+
+    for linha in linhas:
+        l = linha.strip()
+        if l == '00/00/0000':
+            continue
+
+        m_data = padrao_data.match(l)
+        if m_data:
+            data_str, sufixo = m_data.groups()
+            dd, mm, yyyy = data_str.split('/')
+            try:
+                data_atual = date(int(yyyy), int(mm), int(dd))
+            except ValueError:
+                data_atual = None
+            if sufixo.strip():
+                texto_pendente.append(sufixo.strip())
+            continue
+
+        m_trans = padrao_transacao.match(l)
+        if m_trans:
+            _lote, meio, valor_str, sinal = m_trans.groups()
+            meio = (meio or '').strip()
+            chave = re.sub(r'\s+', '', meio).upper()
+            if 'SALDOANTERIOR' in chave or 'SALDODODIA' in chave or chave == 'SALDO':
+                texto_pendente = []
+                data_atual = None
+                continue
+
+            partes_meio = meio.split(None, 1)
+            if partes_meio and partes_meio[0].isdigit():
+                resto_meio = partes_meio[1] if len(partes_meio) > 1 else ''
+            else:
+                resto_meio = meio
+
+            if data_atual is not None:
+                historico = ' '.join(texto_pendente + ([resto_meio] if resto_meio else []))
+                out.append({'data': data_atual, 'historico': historico.strip() or '(sem descricao)',
+                             'valor': _dec(valor_str), 'tipo': ('C' if sinal == '+' else 'D'), 'obs': ''})
+            texto_pendente = []
+            data_atual = None
+            continue
+
+        texto_pendente.append(l)
+
+    return out, None
+
+
 def parse_bb(texto):
     if 'Dia Lote Documento' in texto:
-        return _parse_bb_dia_lote(texto)
+        transacoes, aviso = _parse_bb_dia_lote(texto)
+        if not transacoes:
+            transacoes, aviso = _parse_bb_dia_lote_data_separada(texto)
+        return transacoes, aviso
 
     # Os dois layouts abaixo tem 'Dt. movimento' e 'Dt. balancete' no
     # cabecalho (so a ordem muda) - nao da pra distinguir por isso. O
