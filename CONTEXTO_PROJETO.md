@@ -160,7 +160,7 @@ pagina.
   texto.lower()` pegando mencao a esse banco como texto livre dentro da
   descricao de uma transacao de outro banco.
 - Ailos / ViaCredi (mesmo sistema, cooperativa aparece no cabecalho)
-- Banco do Brasil - dois formatos, `parse_bb` detecta qual e:
+- Banco do Brasil - TRES formatos, `parse_bb` detecta qual e:
   1. Formato atual (com colunas "Ag. origem"/"Lote" no cabecalho) - excluir
      linhas "BB Rende Facil", mesma logica do Itau.
   2. Formato de 2016 (`_parse_bb_2016`), sem "Ag. origem"/"Lote". Saldo so
@@ -171,11 +171,26 @@ pagina.
      sem data na frente - cuidado pra nao confundir com a linha de saldo
      final "S A L D O" (tambem sem "documento" antes do valor, mas
      comeca com data, entao nao deve ser tratada como continuacao).
-  ARMADILHA: os dois formatos tem "Dt. movimento" E "Dt. balancete" no
+  3. Formato "Dia Lote Documento" (`_parse_bb_dia_lote`), identificado
+     pelo cabecalho "Dia Lote Documento Historico Valor". Aqui nao tem
+     coluna C/D separada - o sinal vem no final da linha, tipo
+     "1.234,56 (+)" ou "98,00 (-)". Estrutura de cada lancamento e uma
+     linha de "categoria" (ex: "Pix - Enviado"), seguida de uma linha
+     com data+lote+historico+valor+sinal, as vezes seguida de mais uma
+     linha de continuacao da descricao (quando a linha seguinte nao
+     bate com o padrao de data). LIMITACAO CONHECIDA: se dois
+     lancamentos vierem colados um no outro sem nada entre eles, o
+     parser pode perder um pedaco da descricao de um deles - mas o
+     valor e a data sempre ficam corretos (o que importa pra bater o
+     saldo). Linhas "SALDO ANTERIOR" / "SALDO DO DIA" sao ignoradas.
+     Validado com extrato real: 126 lancamentos, 0 avisos, saldo bateu
+     exato (3.673,73 + creditos - debitos = 3.387,63).
+  ARMADILHA: os formatos 1 e 2 tem "Dt. movimento" E "Dt. balancete" no
   cabecalho (so a ordem dos dois muda) - NAO da pra distinguir por isso
   sozinho (peguei uma regressao no formato atual testando so com isso).
   O sinal confiavel e a AUSENCIA de "Ag. origem" pra identificar o
-  formato de 2016.
+  formato de 2016. O formato 3 e identificado antes dos outros dois,
+  pela presenca de "Dia Lote Documento" (string exclusiva dele).
 - Bradesco (cuidado: o layout dos primeiros lancamentos de credito difere
   do layout dos lancamentos de debito dentro do MESMO extrato - ver
   `parse_bradesco` pra entender a logica de linha "tipo" + linha de
