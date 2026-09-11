@@ -68,6 +68,35 @@ Isso gera `dist/Conversor_Extratos.exe`. Copiar esse arquivo por cima do
 `Conversor_Extratos.spec` guarda a configuracao do build (nao precisa mexer
 nele pra um build padrao).
 
+Depois de copiar o novo `.exe`, regerar o `Para_Equipe/Conversor_Extratos.zip`
+(exe + `LEIA-ME.txt` + `LICENSE.txt`) e subir pra release do GitHub por cima
+do asset existente (mesmo link de sempre, tag `1.0` - nunca criar uma tag
+nova so pra isso, senao os links ja compartilhados quebram). Ver historico
+de commits recentes pra copiar o comando de upload via API (delete do asset
+antigo + upload do novo, usando o token do `git credential fill`).
+
+### Verificacao automatica de atualizacao
+
+O programa checa sozinho (numa thread separada, sem travar nada, ignora
+qualquer erro silenciosamente) se tem versao mais nova disponivel,
+comparando `VERSAO_ATUAL` (constante em `converter.py`) contra o conteudo
+do arquivo `VERSION` no repositorio (lido via
+`raw.githubusercontent.com` - nao manda nenhum dado do usuario, so le um
+numero de volta). **Sempre que gerar uma nova versao pra distribuir:**
+
+1. Atualizar `VERSAO_ATUAL` em `converter.py` (ex: `'1.1'`).
+2. Atualizar o arquivo `VERSION` na raiz do repo com o MESMO numero.
+3. Recompilar, testar, e subir o novo `.exe`/zip pro mesmo link de sempre
+   (ver instrucoes acima - a tag da release NAO muda).
+4. Fazer commit e push de tudo (codigo + VERSION) ANTES ou junto de
+   publicar o novo `.exe`, senao quem ja tem a versao antiga vai ver o
+   aviso de atualizacao mas o link vai entregar a mesma versao antiga.
+
+Cuidado: o `raw.githubusercontent.com` tem cache de CDN (na pratica
+alguns minutos) - depois de dar push no `VERSION`, pode levar um tempinho
+pra quem ja esta rodando o programa ver o aviso. Isso e esperado, nao e
+bug.
+
 ## Regra de ouro de cada parser
 
 Nunca advinhar layout de banco sem ver uma amostra real. Sempre que um
