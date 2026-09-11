@@ -43,7 +43,8 @@ DETECTORES = [
     ('itau',      lambda t: 'extrato mensal' in t.lower() and ('ita\u00fa' in t.lower() or 'B001A' in t)),
     ('unicred',   lambda t: 'CENTRAL DE RELACIONAMENTO' in t or ('Coop:' in t and 'AG:' in t and 'Conta:' in t)),
     ('ailos',     lambda t: 'AILOS' in t.upper() or 'VIACREDIALTOVALE' in t.upper() or 'VIACREDI' in t.upper()),
-    ('bb',        lambda t: 'BB Rende F' in t or ('Ag. origem' in t and 'Lote' in t) or 'Dt. balancete' in t),
+    ('bb',        lambda t: 'BB Rende F' in t or ('Ag. origem' in t and 'Lote' in t) or 'Dt. balancete' in t
+                              or 'Dia Lote Documento' in t),
     ('santander', lambda t: 'santander' in t.lower() or 'Extrato_PJ_A4' in t or 'BALP_UY' in t),
     ('sicredi',   lambda t: 'Sicredi' in t or 'Associado:' in t),
 ]

@@ -399,8 +399,84 @@ def _parse_bb_2016(texto):
     return out, None
 
 
+def _parse_bb_dia_lote(texto):
+    """Terceiro layout do BB, cabecalho 'Dia Lote Documento Historico
+    Valor' (extrato tipo internet banking/app, sem 'Dt. movimento'/
+    'Dt. balancete' nenhum). Sinal vem como '(+)'/'(-)' no final da
+    linha, nao 'C'/'D'. Cada lancamento tem uma linha de "categoria"
+    ANTES (ex: 'Pix - Recebido', 'Compra com Cartao') e frequentemente
+    uma linha de continuacao (data/hora originais + documento + nome)
+    DEPOIS - mas o pdfplumber as vezes funde a continuacao dentro da
+    propria linha do lancamento (antes do valor), entao o meio da linha
+    (entre o numero de lote e o valor) pode ser so o numero de documento
+    OU documento+descricao fundida. Validado batendo saldo inicial + soma
+    dos lancamentos == saldo final 'S A L D O' declarado no proprio
+    extrato (ver CONTEXTO_PROJETO.md).
+    LIMITACAO CONHECIDA: se um lancamento nao tiver NENHUMA linha de
+    continuacao nem categoria fundida (2 lancamentos colados sem nada
+    entre eles), a categoria do lancamento seguinte pode ser engolida
+    como se fosse continuacao deste - o valor/tipo/data continuam
+    corretos (bate no total), so a descricao daquele lancamento seguinte
+    fica vazia. Nao visto na amostra testada, mas pode acontecer.
+    """
+    padrao = re.compile(
+        r'^(\d{2}/\d{2}/\d{4})\s+(?:(\d+)\s+)?(.*?)\s+([\d.]+,\d{2})\s*\(([+-])\)$'
+    )
+    linhas = _linhas_uteis(texto)
+    out = []
+    categoria = None
+    i = 0
+    while i < len(linhas):
+        l = linhas[i].strip()
+        m = padrao.match(l)
+        if not m:
+            categoria = l
+            i += 1
+            continue
+
+        data_str, _lote, meio, valor_str, sinal = m.groups()
+        meio = (meio or '').strip()
+        chave = re.sub(r'\s+', '', meio).upper()
+        if 'SALDOANTERIOR' in chave or 'SALDODODIA' in chave or chave == 'SALDO':
+            categoria = None
+            i += 1
+            continue
+
+        partes_meio = meio.split(None, 1)
+        if partes_meio and partes_meio[0].isdigit():
+            resto_meio = partes_meio[1] if len(partes_meio) > 1 else ''
+        else:
+            resto_meio = meio
+
+        historico = categoria or ''
+        if resto_meio:
+            historico = f'{historico} {resto_meio}'.strip()
+
+        if i + 1 < len(linhas):
+            prox = linhas[i + 1].strip()
+            if not padrao.match(prox):
+                historico = f'{historico} {prox}'.strip()
+                i += 1
+
+        dd, mm, yyyy = data_str.split('/')
+        try:
+            dt = date(int(yyyy), int(mm), int(dd))
+        except ValueError:
+            categoria = None
+            i += 1
+            continue
+        out.append({'data': dt, 'historico': historico or '(sem descricao)',
+                     'valor': _dec(valor_str), 'tipo': ('C' if sinal == '+' else 'D'), 'obs': ''})
+        categoria = None
+        i += 1
+    return out, None
+
+
 def parse_bb(texto):
-    # Os dois layouts do BB tem 'Dt. movimento' e 'Dt. balancete' no
+    if 'Dia Lote Documento' in texto:
+        return _parse_bb_dia_lote(texto)
+
+    # Os dois layouts abaixo tem 'Dt. movimento' e 'Dt. balancete' no
     # cabecalho (so a ordem muda) - nao da pra distinguir por isso. O
     # layout atual (com 'Ag. origem'/'Lote') tem essas 2 colunas extras
     # que o layout de 2016 nao tem; usa a AUSENCIA delas como sinal.
