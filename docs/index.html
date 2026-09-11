@@ -261,9 +261,14 @@
     margin-top: 0.6rem;
     display: flex;
     flex-direction: column;
-    gap: 0.35rem;
+    gap: 0.85rem;
     padding-left: 1rem;
     border-left: 2px solid var(--rule);
+  }
+  .versao-item{
+    display: flex;
+    flex-direction: column;
+    gap: 0.15rem;
   }
   .versao-link{
     font-family: var(--mono);
@@ -277,10 +282,39 @@
     font-family: var(--sans);
     font-size: 0.78rem;
   }
+  .versao-corpo{
+    font-size: 0.8rem;
+    color: var(--ink-soft);
+    margin: 0;
+    max-width: 56ch;
+  }
   .versoes-vazio{
     font-size: 0.82rem;
     color: var(--ink-faint);
     margin: 0;
+  }
+
+  /* ---------- novidades da versao atual ---------- */
+  .novidades-atual{
+    margin-top: 0.9rem;
+    padding: 0.9rem 1.1rem;
+    background: var(--paper-raised);
+    border: 1px solid var(--rule);
+    border-radius: 4px;
+  }
+  .novidades-atual .novidades-titulo{
+    font-family: var(--mono);
+    font-size: 0.75rem;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+    color: var(--ink-faint);
+    margin: 0 0 0.4rem;
+  }
+  .novidades-atual p{
+    font-size: 0.85rem;
+    color: var(--ink-soft);
+    margin: 0;
+    max-width: 60ch;
   }
 
   .callout{
@@ -429,6 +463,11 @@
       <span class="file-meta">.exe + LEIA-ME + LICENSE · Windows · <a href="https://github.com/jeanvieir4/conversor-pdf-para-ofx" target="_blank" rel="noopener noreferrer">código-fonte no GitHub</a></span>
     </div>
     <a class="btn-download" href="https://github.com/jeanvieir4/conversor-pdf-para-ofx/releases/download/1.0/Conversor_Extratos.zip" target="_blank" rel="noopener noreferrer">Baixar Versão Atualizada &darr;</a>
+  </div>
+
+  <div class="novidades-atual" id="novidades-versao-atual">
+    <p class="novidades-titulo">O que mudou</p>
+    <p class="versoes-vazio">Carregando...</p>
   </div>
 
   <details class="versoes-antigas">
@@ -603,6 +642,14 @@
 <script>
 (function(){
   var lista = document.getElementById('lista-versoes-antigas');
+  var novidades = document.getElementById('novidades-versao-atual');
+
+  function escapeHtml(s){
+    return (s || '').replace(/[&<>"']/g, function(c){
+      return { '&':'&amp;', '<':'&lt;', '>':'&gt;', '"':'&quot;', "'":'&#39;' }[c];
+    });
+  }
+
   fetch('https://api.github.com/repos/jeanvieir4/conversor-pdf-para-ofx/releases')
     .then(function(r){ return r.json(); })
     .then(function(releases){
@@ -611,25 +658,38 @@
       });
       if (!arquivadas.length) {
         lista.innerHTML = '<p class="versoes-vazio">Nenhuma versão arquivada ainda.</p>';
+        novidades.innerHTML = '<p class="novidades-titulo">O que mudou</p><p class="versoes-vazio">Sem informação disponível ainda.</p>';
         return;
       }
       arquivadas.sort(function(a, b){
         return new Date(b.published_at) - new Date(a.published_at);
       });
+
+      var maisRecente = arquivadas[0];
+      var corpoRecente = escapeHtml(maisRecente.body).replace(/\n/g, '<br>');
+      novidades.innerHTML = '<p class="novidades-titulo">O que mudou na ' + escapeHtml(maisRecente.tag_name) + '</p>' +
+        '<p>' + (corpoRecente || 'Sem descrição.') + '</p>';
+
       var html = '';
       arquivadas.forEach(function(r){
         var asset = r.assets.filter(function(a){ return a.name.slice(-4) === '.zip'; })[0];
         if (!asset) return;
         var data = new Date(r.published_at).toLocaleDateString('pt-BR');
-        html += '<a class="versao-link" href="' + asset.browser_download_url +
-          '" target="_blank" rel="noopener noreferrer">' + r.tag_name +
-          ' <span class="versao-data">(' + data + ')</span></a>';
+        var corpo = escapeHtml(r.body).replace(/\n/g, '<br>');
+        html += '<div class="versao-item">' +
+          '<a class="versao-link" href="' + asset.browser_download_url +
+          '" target="_blank" rel="noopener noreferrer">' + escapeHtml(r.tag_name) +
+          ' <span class="versao-data">(' + data + ')</span></a>' +
+          (corpo ? '<p class="versao-corpo">' + corpo + '</p>' : '') +
+          '</div>';
       });
       lista.innerHTML = html || '<p class="versoes-vazio">Nenhuma versão arquivada ainda.</p>';
     })
     .catch(function(){
       lista.innerHTML = '<p class="versoes-vazio">Não deu pra carregar a lista agora. ' +
         '<a href="https://github.com/jeanvieir4/conversor-pdf-para-ofx/releases" target="_blank" rel="noopener noreferrer">Ver todas as releases no GitHub</a>.</p>';
+      novidades.innerHTML = '<p class="novidades-titulo">O que mudou</p><p class="versoes-vazio">Não deu pra carregar agora. ' +
+        '<a href="https://github.com/jeanvieir4/conversor-pdf-para-ofx/releases" target="_blank" rel="noopener noreferrer">Ver no GitHub</a>.</p>';
     });
 })();
 </script>
