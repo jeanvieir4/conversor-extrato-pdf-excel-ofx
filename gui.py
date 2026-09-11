@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 """
-Interface grafica (janela nativa via pywebview) do Conversor de Extratos.
+Interface grafica (janela nativa via pywebview) do Conversor PDF para OFX.
 Reaproveita a mesma logica de conversao de converter.py - so troca a
 "casca" do console preto por uma janela normal. Ver CONTEXTO_PROJETO.md,
 secao "Ideias futuras", pro motivo dessa interface existir.
@@ -71,7 +71,7 @@ def main():
     with open(_caminho_recurso('gui.html'), encoding='utf-8') as f:
         html = f.read()
     window = webview.create_window(
-        'Conversor de Extratos',
+        'Conversor PDF para OFX',
         html=html,
         js_api=api,
         width=760,

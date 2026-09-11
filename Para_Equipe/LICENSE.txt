@@ -1,4 +1,4 @@
-LICENCA DESTE PROGRAMA (Conversor de Extrato PDF -> Excel + OFX)
+LICENCA DESTE PROGRAMA (Conversor PDF para OFX)
 ==================================================================
 
 Resumo em portugues (nao substitui o texto legal abaixo)

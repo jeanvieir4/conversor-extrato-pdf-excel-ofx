@@ -103,7 +103,7 @@ obrigatorio, o programa continua gratuito de qualquer forma):
 Chave Pix: jean.vieira@hotmail.com
 
 QR code pra pagar direto: pagina do projeto no GitHub
-https://github.com/jeanvieir4/conversor-extrato-pdf-excel-ofx
+https://github.com/jeanvieir4/conversor-pdf-para-ofx
 
 Duvidas ou PDF de banco nao suportado: Jean Vieira
 (49) 99907-9884 - jean.vieira@hotmail.com

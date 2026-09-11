@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 """
-Conversor de extrato bancario em PDF para Excel - Jean Vieira
+Conversor PDF para OFX - Jean Vieira
 Uso: python converter.py caminho_do_extrato.pdf [outro.pdf ...]
 Gera um .xlsx por PDF de entrada, na mesma pasta, com 4 colunas:
 Data (dd/mm/aaaa), Historico, Valor (positivo, virgula decimal), Tipo (C/D).
@@ -23,7 +23,7 @@ from ofx_export import gerar_ofx
 # So assim quem ja tem uma versao antiga instalada fica sabendo que saiu
 # uma nova - ver "_verificar_atualizacao" mais abaixo e o CONTEXTO_PROJETO.md.
 VERSAO_ATUAL = '1.0'
-_REPO_GITHUB = 'jeanvieir4/conversor-extrato-pdf-excel-ofx'
+_REPO_GITHUB = 'jeanvieir4/conversor-pdf-para-ofx'
 _URL_VERSION = f'https://raw.githubusercontent.com/{_REPO_GITHUB}/main/VERSION'
 _URL_DOWNLOAD = f'https://github.com/{_REPO_GITHUB}/releases/download/1.0/Conversor_Extratos.zip'
 
@@ -274,7 +274,7 @@ if __name__ == '__main__':
     thread_update.start()
 
     print('============================================')
-    print('  Conversor de Extrato PDF para Excel - Jean Vieira')
+    print('  Conversor PDF para OFX - Jean Vieira')
     print('============================================')
 
     if len(sys.argv) > 1:

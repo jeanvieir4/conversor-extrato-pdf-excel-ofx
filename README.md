@@ -1,4 +1,4 @@
-# conversor-extrato-pdf-excel-ofx
+# Conversor PDF para OFX
 
 Converte extrato bancario em PDF (Sicoob, Itau, Bradesco, Caixa, Banco do
 Brasil, Sicredi, Cresol, UniCred, Ailos/ViaCredi, Santander e mais) para
@@ -14,7 +14,7 @@ numa planilha.
 Nao precisa instalar Python nem nada. Baixe o zip (contem o `.exe`, o
 `LEIA-ME.txt` com instrucoes e a `LICENSE.txt`) e extraia:
 
-**[Conversor_Extratos.zip (GitHub Releases)](https://github.com/jeanvieir4/conversor-extrato-pdf-excel-ofx/releases/download/1.0/Conversor_Extratos.zip)**
+**[Conversor_Extratos.zip (GitHub Releases)](https://github.com/jeanvieir4/conversor-pdf-para-ofx/releases/download/1.0/Conversor_Extratos.zip)**
 
 O LEIA-ME.txt tambem esta neste repositorio em
 [`Para_Equipe/LEIA-ME.txt`](Para_Equipe/LEIA-ME.txt).
