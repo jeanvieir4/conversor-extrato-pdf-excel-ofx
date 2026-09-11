@@ -8,6 +8,8 @@ Data (dd/mm/aaaa), Historico, Valor (positivo, virgula decimal), Tipo (C/D).
 import sys
 import os
 import glob
+import threading
+import urllib.request
 import pdfplumber
 from openpyxl import Workbook
 from openpyxl.styles import Font, PatternFill
@@ -15,6 +17,15 @@ from openpyxl.styles import Font, PatternFill
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 from bancos import BANK_PARSERS
 from ofx_export import gerar_ofx
+
+# Sempre que gerar uma nova versao pra distribuir: atualizar esse numero
+# E o conteudo do arquivo VERSION no repositorio (mesmo numero nos dois).
+# So assim quem ja tem uma versao antiga instalada fica sabendo que saiu
+# uma nova - ver "_verificar_atualizacao" mais abaixo e o CONTEXTO_PROJETO.md.
+VERSAO_ATUAL = '1.0'
+_REPO_GITHUB = 'jeanvieir4/conversor-extrato-pdf-excel-ofx'
+_URL_VERSION = f'https://raw.githubusercontent.com/{_REPO_GITHUB}/main/VERSION'
+_URL_DOWNLOAD = f'https://github.com/{_REPO_GITHUB}/releases/download/1.0/Conversor_Extratos.zip'
 
 # Observacao: nem todo banco escreve o proprio nome como texto selecionavel no PDF
 # (varios usam o nome so na logo, que e imagem). Por isso alguns detectores usam
@@ -203,6 +214,36 @@ def processar_pdf(caminho_pdf, pasta_saida):
     return caminho_saida, total, avisos, arquivos_ofx
 
 
+def _versao_maior(remota, atual):
+    """Compara '1.10' > '1.9' corretamente (numero a numero, nao texto)."""
+    def normalizar(v):
+        partes = []
+        for p in v.strip().split('.'):
+            if not p.isdigit():
+                return None
+            partes.append(int(p))
+        return tuple(partes) if partes else None
+    a, b = normalizar(remota), normalizar(atual)
+    if a is None or b is None:
+        return False
+    return a > b
+
+
+def _verificar_atualizacao(resultado):
+    """Roda em thread separada (ver __main__) pra nao atrasar o programa.
+    So consulta um arquivo de texto simples no GitHub (VERSION) - nao
+    manda nenhum dado do usuario, so le um numero de volta. Qualquer falha
+    (sem internet, GitHub fora do ar, etc.) e ignorada silenciosamente:
+    verificar atualizacao nunca pode travar nem atrapalhar a conversao."""
+    try:
+        with urllib.request.urlopen(_URL_VERSION, timeout=2.5) as resp:
+            versao_remota = resp.read().decode('utf-8').strip()
+        if _versao_maior(versao_remota, VERSAO_ATUAL):
+            resultado['nova_versao'] = versao_remota
+    except Exception:
+        pass
+
+
 def _pasta_do_programa():
     """Pasta onde esta o .exe (ou o .py, se rodando via Python direto)."""
     if getattr(sys, 'frozen', False):
@@ -210,9 +251,26 @@ def _pasta_do_programa():
     return os.path.dirname(os.path.abspath(__file__))
 
 
+def _mostrar_aviso_atualizacao(resultado_update, thread_update):
+    """Espera a verificacao terminar (se ainda nao tiver terminado) so um
+    pouco mais - na pratica ja rodou em paralelo com a conversao, entao
+    quase sempre essa espera e de 0 segundos."""
+    thread_update.join(timeout=2.5)
+    if resultado_update.get('nova_versao'):
+        print()
+        print('============================================')
+        print(f"Nova versao disponivel: v{resultado_update['nova_versao']} (voce esta usando a v{VERSAO_ATUAL})")
+        print(f'Baixe em: {_URL_DOWNLOAD}')
+        print('============================================')
+
+
 if __name__ == '__main__':
     rodando_como_exe = getattr(sys, 'frozen', False)
     pasta_programa = _pasta_do_programa()
+
+    resultado_update = {}
+    thread_update = threading.Thread(target=_verificar_atualizacao, args=(resultado_update,), daemon=True)
+    thread_update.start()
 
     print('============================================')
     print('  Conversor de Extrato PDF para Excel - Jean Vieira')
@@ -230,6 +288,7 @@ if __name__ == '__main__':
         print('Nenhum arquivo PDF encontrado.')
         print(f'Coloque os extratos em PDF nesta pasta ({pasta_programa})')
         print('e execute o programa novamente, ou arraste os PDFs em cima do .exe.')
+        _mostrar_aviso_atualizacao(resultado_update, thread_update)
         if rodando_como_exe:
             input('\nPressione Enter para sair...')
         sys.exit(1)
@@ -249,6 +308,7 @@ if __name__ == '__main__':
     print(f'Concluido. {len(arquivos)} arquivo(s) processado(s), {erros} erro(s).')
     print('Os arquivos .xlsx e .ofx foram gerados nesta mesma pasta.')
     print('============================================')
+    _mostrar_aviso_atualizacao(resultado_update, thread_update)
     if rodando_como_exe:
         input('\nPressione Enter para sair...')
     sys.exit(1 if erros else 0)
