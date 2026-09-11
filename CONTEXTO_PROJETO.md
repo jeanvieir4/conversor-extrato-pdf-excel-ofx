@@ -91,6 +91,13 @@ numero de volta). **Sempre que gerar uma nova versao pra distribuir:**
 4. Fazer commit e push de tudo (codigo + VERSION) ANTES ou junto de
    publicar o novo `.exe`, senao quem ja tem a versao antiga vai ver o
    aviso de atualizacao mas o link vai entregar a mesma versao antiga.
+5. **Arquivar essa versao numa release separada** (pedido do Jean: quem
+   precisar de uma versao antiga tem que conseguir baixar). Criar uma
+   release nova com tag `vX.Y` (ex: `v1.1`) e subir o MESMO zip la, com
+   nome tipo `Conversor_Extratos_v1.1.zip`. Essa release e so pra arquivo/
+   historico - o link estavel principal (tag `1.0`) continua sendo o unico
+   divulgado no README/LEIA-ME/pagina do projeto e o unico usado pelo
+   aviso de atualizacao.
 
 Cuidado: o `raw.githubusercontent.com` tem cache de CDN (na pratica
 alguns minutos) - depois de dar push no `VERSION`, pode levar um tempinho
