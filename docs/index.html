@@ -237,6 +237,52 @@
   .btn-download:hover{ opacity: 0.88; }
   .btn-download:focus-visible{ outline: 2px solid var(--link); outline-offset: 2px; }
 
+  /* ---------- versoes anteriores ---------- */
+  .versoes-antigas{
+    margin-top: 0.6rem;
+  }
+  .versoes-antigas summary{
+    cursor: pointer;
+    font-size: 0.8rem;
+    color: var(--ink-faint);
+    list-style: none;
+    display: inline-flex;
+    align-items: center;
+    gap: 0.3rem;
+  }
+  .versoes-antigas summary::-webkit-details-marker{ display: none; }
+  .versoes-antigas summary::before{
+    content: '▸';
+    font-size: 0.7rem;
+  }
+  .versoes-antigas[open] summary::before{ content: '▾'; }
+  .versoes-antigas summary:hover{ color: var(--ink-soft); }
+  .versoes-lista{
+    margin-top: 0.6rem;
+    display: flex;
+    flex-direction: column;
+    gap: 0.35rem;
+    padding-left: 1rem;
+    border-left: 2px solid var(--rule);
+  }
+  .versao-link{
+    font-family: var(--mono);
+    font-size: 0.82rem;
+    color: var(--link);
+    text-decoration: none;
+  }
+  .versao-link:hover{ text-decoration: underline; }
+  .versao-data{
+    color: var(--ink-faint);
+    font-family: var(--sans);
+    font-size: 0.78rem;
+  }
+  .versoes-vazio{
+    font-size: 0.82rem;
+    color: var(--ink-faint);
+    margin: 0;
+  }
+
   .callout{
     margin-top: 2.75rem;
     border: 1px solid var(--debit);
@@ -382,8 +428,15 @@
       <span class="file-name">Conversor_Extratos.zip</span>
       <span class="file-meta">.exe + LEIA-ME + LICENSE · Windows · <a href="https://github.com/jeanvieir4/conversor-pdf-para-ofx" target="_blank" rel="noopener noreferrer">código-fonte no GitHub</a></span>
     </div>
-    <a class="btn-download" href="https://github.com/jeanvieir4/conversor-pdf-para-ofx/releases/download/1.0/Conversor_Extratos.zip" target="_blank" rel="noopener noreferrer">Baixar o programa &darr;</a>
+    <a class="btn-download" href="https://github.com/jeanvieir4/conversor-pdf-para-ofx/releases/download/1.0/Conversor_Extratos.zip" target="_blank" rel="noopener noreferrer">Baixar Versão Atualizada &darr;</a>
   </div>
+
+  <details class="versoes-antigas">
+    <summary>Baixar versões anteriores</summary>
+    <div class="versoes-lista" id="lista-versoes-antigas">
+      <p class="versoes-vazio">Carregando...</p>
+    </div>
+  </details>
 
   <div class="ledger">
     <div class="ledger-label">
@@ -546,5 +599,39 @@
   </footer>
 
 </div>
+
+<script>
+(function(){
+  var lista = document.getElementById('lista-versoes-antigas');
+  fetch('https://api.github.com/repos/jeanvieir4/conversor-pdf-para-ofx/releases')
+    .then(function(r){ return r.json(); })
+    .then(function(releases){
+      var arquivadas = releases.filter(function(r){
+        return r.tag_name !== '1.0' && r.assets && r.assets.length > 0;
+      });
+      if (!arquivadas.length) {
+        lista.innerHTML = '<p class="versoes-vazio">Nenhuma versão arquivada ainda.</p>';
+        return;
+      }
+      arquivadas.sort(function(a, b){
+        return new Date(b.published_at) - new Date(a.published_at);
+      });
+      var html = '';
+      arquivadas.forEach(function(r){
+        var asset = r.assets.filter(function(a){ return a.name.slice(-4) === '.zip'; })[0];
+        if (!asset) return;
+        var data = new Date(r.published_at).toLocaleDateString('pt-BR');
+        html += '<a class="versao-link" href="' + asset.browser_download_url +
+          '" target="_blank" rel="noopener noreferrer">' + r.tag_name +
+          ' <span class="versao-data">(' + data + ')</span></a>';
+      });
+      lista.innerHTML = html || '<p class="versoes-vazio">Nenhuma versão arquivada ainda.</p>';
+    })
+    .catch(function(){
+      lista.innerHTML = '<p class="versoes-vazio">Não deu pra carregar a lista agora. ' +
+        '<a href="https://github.com/jeanvieir4/conversor-pdf-para-ofx/releases" target="_blank" rel="noopener noreferrer">Ver todas as releases no GitHub</a>.</p>';
+    });
+})();
+</script>
 </body>
 </html>

@@ -22,7 +22,7 @@ from ofx_export import gerar_ofx
 # E o conteudo do arquivo VERSION no repositorio (mesmo numero nos dois).
 # So assim quem ja tem uma versao antiga instalada fica sabendo que saiu
 # uma nova - ver "_verificar_atualizacao" mais abaixo e o CONTEXTO_PROJETO.md.
-VERSAO_ATUAL = '1.1'
+VERSAO_ATUAL = '1.2'
 _REPO_GITHUB = 'jeanvieir4/conversor-pdf-para-ofx'
 _URL_VERSION = f'https://raw.githubusercontent.com/{_REPO_GITHUB}/main/VERSION'
 _URL_DOWNLOAD = f'https://github.com/{_REPO_GITHUB}/releases/download/1.0/Conversor_Extratos.zip'
@@ -275,6 +275,7 @@ if __name__ == '__main__':
 
     print('============================================')
     print('  Conversor PDF para OFX - Jean Vieira')
+    print(f'  Versao {VERSAO_ATUAL}')
     print('============================================')
 
     if len(sys.argv) > 1:
